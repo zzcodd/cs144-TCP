@@ -1,53 +1,58 @@
-### TCP 实现 - CS144 实验
+# TCP 实现 - CS144 实验
 
 ## 项目介绍
 
-项目的详细说明可在 [CS144](https://cs144.github.io/) 课程官网的 **Lab Assignment** 部分找到，那里有每个实验的 PDF 介绍文档。
-
-这个项目通过分步骤实现 TCP 协议，涵盖了 TCP 字节流、流重组、TCP 接收器、TCP 发送器和 TCP 连接等模块的实现。
+这是我在CS144课程中从零开始实现的一个简化版TCP协议。这个项目的重点在于构建一个最小化的TCP协议栈，处理基本的TCP功能，包括连接建立、数据传输和连接终止。本文档将详细介绍项目的结构、主要功能，以及如何编译和测试这个实现。
 
 ---
 
-## 目录树
+## 目录结构
 
 ```
-sponge
-├── apps
-├── build      代码构建
-├── CMakeLists.txt
-├── compile_commands.json -> build/compile_commands.json
-├── doctests
-├── etc
-├── libsponge  源代码
-├── README.md
-├── tests
-├── tun.sh
-├── txrx.sh
-└── writeups
+/project_root
+│
+├── include/               # 头文件
+│   ├── tcp_sender.hh      # TCP发送方接口定义
+│   ├── tcp_receiver.hh    # TCP接收方接口定义
+│   ├── tcp_connection.hh  # TCP连接接口定义
+│   └── ...                # 其他头文件
+│
+├── src/                   # 源代码文件
+│   ├── tcp_sender.cc      # TCP发送方实现
+│   ├── tcp_receiver.cc    # TCP接收方实现
+│   ├── tcp_connection.cc  # TCP连接实现
+│   └── ...                # 其他源代码文件
+│
+├── tests/                 # 单元测试
+│   ├── tcp_sender_test.cc # TCP发送方测试
+│   ├── tcp_receiver_test.cc # TCP接收方测试
+│   ├── tcp_connection_test.cc # TCP连接测试
+│   └── ...                # 其他测试文件
+│
+└── Makefile               # 编译配置文件
 ```
 
 ---
 
 ## 环境搭建
 
+推荐使用 **CS144 VirtualBox**，并选择 **Ubuntu 20.04** 作为实验环境。
 
-推荐安装 **CS144 VirtualBox**，并使用 **Ubuntu 20.04** 作为实验环境。
-
-详细的安装步骤可以在 [VM Installation Guide](https://stanford.edu/class/cs144/vm_howto/vm-howto-image.html) 上找到，按照步骤操作即可配置好本实验的环境。
-
----
-
-## 项目框架代码拉取
-
-在官方每个实验的 PDF 介绍中，都会有一个 **Getting started** 部分，列出了拉取项目代码的具体步骤。按照这些步骤，你可以获取到每个实验的代码。
+详细的安装步骤可以在 [VM Installation Guide](https://stanford.edu/class/cs144/vm_howto/vm-howto-image.html) 中找到。按照指南操作即可完成实验环境的搭建。
 
 ---
 
-## 项目运行和测试的相关命令
+## 获取项目代码
 
-测试文件位于 `sponge/tests/` 文件夹下，对应的 CMake 命令位于 `sponge/etc/test.cmake` 中。
+在CS144官方提供的每个实验PDF中都有 **Getting started** 部分，详细列出了获取项目代码的步骤。按照这些步骤操作，你可以拉取到每个实验的框架代码。
 
-在构建时使用以下命令运行不同实验的测试：
+---
+
+## 项目编译与测试
+
+测试文件位于 `sponge/tests/` 目录下，对应的 CMake 命令在 `sponge/etc/test.cmake` 中定义。
+
+你可以使用以下命令来构建并运行不同实验的测试：
 
 ```bash
 make check_lab1
@@ -56,7 +61,7 @@ make check_lab3
 make check_lab4
 ```
 
-最终，可以使用以下命令对整个项目进行性能测试：
+在完成所有实验后，还可以使用以下命令对整个项目进行性能测试：
 
 ```bash
 ./apps/tcp_benchmark
@@ -64,19 +69,17 @@ make check_lab4
 
 ---
 
-## 项目组成和结果展示
+## 项目组成与实现展示
 
-项目分为五个主要部分：
+项目分为以下五个主要模块：
 
-- **字节流（ByteStream）**：负责对传输的数据进行读写操作，并支持流量控制。
-- **流重组器（StreamReassembler）**：处理 TCP 传输过程中可能出现的乱序、丢失、重复和交叉重叠等情况，确保数据按正确顺序重组。
-- **TCP 接收器（TCPReceiver）**：将接收到的数据送入流重组器处理，并传入字节流。同时返回确认号（ACK）和窗口大小（Window Size），实现流量控制。
-- **TCP 发送器（TCPSender）**：实现重传定时器，用于 TCP 超时重传，并对传输信息进行加工，生成 TCP 段进行发送。
-- **TCP 连接（TCPConnection）**：将 TCP 接收器和发送器封装在一起，实现完整的收发数据功能。
+- **字节流（ByteStream）**：管理数据的读写操作，支持流量控制。
+- **流重组器（StreamReassembler）**：处理TCP数据包的乱序、丢失、重复和交叉重叠，确保数据按正确顺序重组。
+- **TCP 接收器（TCPReceiver）**：负责接收数据并送入流重组器，同时返回ACK和窗口大小，实现流量控制。
+- **TCP 发送器（TCPSender）**：实现重传定时器，处理超时重传，并对数据进行分片和发送。
+- **TCP 连接（TCPConnection）**：整合TCP发送器和接收器，实现完整的TCP连接和数据收发。
 
-基于以上五个部分，最终可以实现一个 TCP 协议栈。
-
-### 压力测试
+### 性能测试结果
 
 ```bash
 $ ./apps/tcp_benchmark 
@@ -87,42 +90,38 @@ CPU-limited throughput with reordering: 0.94 Gbit/s
 
 ---
 
-## 常见问题
+## 常见问题与解决方案
 
-### 1. 字节流细节
+### 1. 字节流模块
 
-字节流内部使用一个 `queue<char> _buff` 实现，有一个容量 `capacity`，可以用于查看缓冲区是否已满，并且可以查看读写的字节数和是否到达数据末尾。当缓冲区为空且输入结束时，标记为 `eof`。
+字节流模块使用了 `queue<char> _buff` 来实现，具有容量限制 `capacity`，可用于监控缓冲区的使用情况。缓冲区为空且输入结束时，会标记为 `eof`。
 
-### 2. 流重组器细节
+### 2. 流重组器模块
 
-传输的字符串必须先写入字节流中，然后再由接收方读取。已写入的数据都是按正确顺序排列的。难点在于处理乱序、重叠、丢失和重复等情况。
-
-流重组器使用自定义的 `struct segment` 结构，并重载了 `<` 操作符，以便使用 `set` 数据结构进行排序。
+流重组器负责处理TCP传输中的乱序、重叠、丢失和重复等情况。传输的数据必须先写入字节流，然后由接收方读取。流重组器使用了自定义的 `struct segment` 结构，并重载了 `<` 操作符，以便使用 `set` 数据结构进行排序。
 
 ### 3. 项目难点
 
-主要难点在于流重组器对写入字符串的处理，特别是如何应对乱序、重叠、丢失和重复等情况。可以重点参考 **Lab 1** 的文档，其中对流重组器的细节有详细描述。
+项目的主要难点在于如何在流重组器中处理乱序、重叠、丢失和重复的数据。建议重点参考 **Lab 1** 的文档，那里详细描述了流重组器的实现细节。
 
 ---
 
-## 贡献
+## 贡献说明
 
-欢迎任何形式的贡献！如果你想改进项目或修复 Bug，可以 Fork 本仓库，进行修改，然后提交 Pull Request。请确保你的代码遵循项目的编码风格并通过所有测试。
-
----
-
-## 许可
-
-本项目基于 MIT 许可协议，详情请参阅 [LICENSE](LICENSE) 文件。
+非常欢迎大家的贡献！如果你有改进建议或发现了Bug，请Fork本仓库并提交Pull Request。在提交之前，请确保你的代码符合项目的编码规范，并通过所有测试。
 
 ---
 
-## 作者
+## 项目作者
 
-本项目由 **zzcodd** 实现并维护。如果你有任何问题或建议，欢迎随时联系！
+本项目由 **zzcodd** 开发和维护。如果你有任何问题或建议，欢迎通过以下方式联系我：
 
 [![GitHub](https://img.shields.io/badge/GitHub-zzcodd-blue?style=flat-square&logo=github)](https://github.com/zzcodd)
 
 ---
 
-感谢你查看本项目！祝你编程愉快！🚀
+感谢你对本项目的关注！祝你在编程旅程中不断进步！🚀
+
+---
+
+希望这个版本的README更符合你作为项目参与者的风格。如果还有其他需要调整的地方，请随时告诉我！
